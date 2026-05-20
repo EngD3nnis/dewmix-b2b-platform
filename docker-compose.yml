@@ -1,0 +1,90 @@
+name: dewmix-hardware
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: dewmix-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: dewmix
+      POSTGRES_PASSWORD: dewmix
+      POSTGRES_DB: dewmix
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infrastructure/docker/postgres-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U dewmix -d dewmix']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: dewmix-redis
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  typesense:
+    image: typesense/typesense:27.1
+    container_name: dewmix-typesense
+    restart: unless-stopped
+    ports:
+      - '8108:8108'
+    volumes:
+      - typesense_data:/data
+    command: '--data-dir /data --api-key=dewmix-typesense-dev-key --enable-cors'
+    healthcheck:
+      test: ['CMD', 'wget', '--quiet', '--spider', 'http://localhost:8108/health']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    container_name: dewmix-minio
+    restart: unless-stopped
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    environment:
+      MINIO_ROOT_USER: dewmix
+      MINIO_ROOT_PASSWORD: dewmix-secret
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # One-shot job that creates the bucket on startup
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set dewmix http://minio:9000 dewmix dewmix-secret;
+      mc mb dewmix/dewmix-images --ignore-existing;
+      mc anonymous set public dewmix/dewmix-images;
+      exit 0;
+      "
+
+volumes:
+  postgres_data:
+  redis_data:
+  typesense_data:
+  minio_data:

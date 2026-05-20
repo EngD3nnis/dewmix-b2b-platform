@@ -1,0 +1,34 @@
+{
+  "name": "dewmix-hardware",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Dewmix Hardware — modern African hardware & construction materials commerce platform",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@9.12.0",
+  "scripts": {
+    "dev": "turbo run dev --parallel",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "db:generate": "pnpm --filter @dewmix/db generate",
+    "db:migrate": "pnpm --filter @dewmix/db migrate:dev",
+    "db:studio": "pnpm --filter @dewmix/db studio",
+    "db:seed": "pnpm --filter @dewmix/db seed",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f",
+    "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,md,json}\""
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.0",
+    "prettier": "^3.3.3",
+    "turbo": "^2.1.3",
+    "typescript": "^5.6.2"
+  }
+}
